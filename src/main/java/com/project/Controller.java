@@ -18,6 +18,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.ToggleGroup;
 import javafx.geometry.Rectangle2D;
 
 
@@ -33,6 +34,8 @@ public class Controller implements Initializable {
     @FXML private RadioButton freeStrokeRadio;
     @FXML private RadioButton lineRadio;
     @FXML private RadioButton rectRadio;
+
+    @FXML private ToggleGroup toolGroup;
 
     // Formulario de estilo
     @FXML private ColorPicker lineColorPicker;
@@ -53,6 +56,13 @@ public class Controller implements Initializable {
     // Punto inicial del arrastre
     private double startX = 0;
     private double startY = 0;
+
+    // Modo mover: true mientras se está arrastrando el objeto seleccionado
+    private boolean moving = false;
+
+    // Última posición del ratón aplicada al movimiento.
+    private double lastX = 0;
+    private double lastY = 0;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -86,7 +96,19 @@ public class Controller implements Initializable {
         // Al seleccionar una entrada guardamos el objeto y redibujamos el lienzo.
         objectList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             selectedObject = newValue;
+            if (newValue != null) {
+                // Hay un objeto seleccionado -> desmarcamos las herramientas de dibujo
+                clearToolSelection();
+            }
             redraw();
+        });
+
+        // Cuando el usuario elige una herramienta de dibujo, se desmarca el objeto
+        // seleccionado y se vuelve al modo de dibujo
+        toolGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue != null) {
+                objectList.getSelectionModel().clearSelection();
+            }
         });
 
         redraw();
@@ -128,9 +150,20 @@ public class Controller implements Initializable {
     }
 
     // Drawing canvas
-
     private void onMousePressed(MouseEvent event) {
         if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        double x = event.getX();
+        double y = event.getY();
+
+        // Empezamos el arrastre si el ratón ha pulsado dentro del requadro del objeto seleccionado
+        moving = false;
+        if (selectedObject != null && isInsideSelection(x, y)) {
+            moving = true;
+            lastX = x;
+            lastY = y;
             return;
         }
 
@@ -139,9 +172,6 @@ public class Controller implements Initializable {
         if (tool == null) {
             return;
         }
-
-        double x = event.getX();
-        double y = event.getY();
 
         switch (tool) {
             case FREESTROKE:
@@ -173,6 +203,17 @@ public class Controller implements Initializable {
         double x = event.getX();
         double y = event.getY();
 
+        // Modo mover: trasladamos el objeto seleccionado
+        if (moving) {
+            // Desplazamiento incremental: lo que el ratón ha avanzado desde el último evento.
+            selectedObject.move(x - lastX, y - lastY);
+            lastX = x;
+            lastY = y;
+
+            redraw();
+            return;
+        }
+
         if (currentStroke != null) {
             // Trazo libre: se añade el punto y se sigue
             currentStroke.addPoint(x, y);
@@ -191,18 +232,30 @@ public class Controller implements Initializable {
         double x = event.getX();
         double y = event.getY();
 
+        // El objeto conserva su nueva posición y sigue seleccionado
+        if (moving) {
+            // Aplicamos el último trocito
+            selectedObject.move(x - lastX, y - lastY);
+            lastX = x;
+            lastY = y;
+
+            moving = false;
+            redraw();
+            return;
+        }
+
         if (currentStroke != null) {
-            // El trazo está terminado: se guarda la posición final y pasa a la memoria
+            // El trazo está terminado: se guarda la posición final y pasa a la lista
             currentStroke.addPoint(x, y);
             objectList.getItems().add(currentStroke);
             currentStroke = null;
         } else if (currentLine != null) {
-            // La línea está terminada: se guarda la posición final y pasa a la memoria
+            // La línea está terminada: se guarda la posición final y pasa a la lista
             currentLine.setEnd(x, y);
             objectList.getItems().add(currentLine);
             currentLine = null;
         } else if (currentRect != null) {
-            // El rectángulo está terminado: se ajusta al punto final y pasa a la memoria
+            // El rectángulo está terminado: se ajusta al punto final y pasa a la lista
             updateRectangle(x, y);
             // Solo se guarda si el rectángulo tiene algo de tamaño
             if (currentRect.getW() > 0 || currentRect.getH() > 0) {
@@ -283,4 +336,26 @@ public class Controller implements Initializable {
         // Restablecemos el discontinuo: si no, los próximos trazos saldrían también discontinuos
         gc.setLineDashes(null);
     }
+
+    /**
+     * Desmarca las herramientas de dibujo.
+     */
+    private void clearToolSelection() {
+        freeStrokeRadio.setSelected(false);
+        lineRadio.setSelected(false);
+        rectRadio.setSelected(false);
+    }
+
+    /**
+     * True si el punto (x, y) está dentro del requadro del objeto seleccionado.
+     */
+    private boolean isInsideSelection(double x, double y) {
+        if (selectedObject == null) {
+            return false;
+        }
+
+        Rectangle2D box = getSelectionBounds(selectedObject);
+        return box.contains(x, y);
+    }
+
 }
