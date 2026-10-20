@@ -6,6 +6,8 @@
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.ColorPicker?>
+<?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -19,16 +21,34 @@
         <Canvas fx:id="canvas" width="600.0" height="500.0" />
 
         <!-- Center: tools -->
-        <VBox spacing="8.0" prefWidth="140.0" style="-fx-background-color: #eeeeee;">
+        <VBox spacing="8.0" prefWidth="200.0" style="-fx-background-color: #eeeeee;">
             <padding><Insets top="10.0" right="10.0" bottom="10.0" left="10.0" /></padding>
             <children>
-                <!-- Top: line width -->
-                <Label text="Width" style="-fx-font-weight: bold;" />
+
+                <!-- Selector de herramienta -->
+                <Label text="Tool" style="-fx-font-weight: bold;" />
                 <fx:define>
-                    <ToggleGroup fx:id="widthGroup" />
+                    <ToggleGroup fx:id="toolGroup" />
                 </fx:define>
-                <RadioButton fx:id="thinRadio" text="Thin" toggleGroup="$widthGroup" selected="true" />
-                <RadioButton fx:id="thickRadio" text="Thick" toggleGroup="$widthGroup" />
+                <RadioButton fx:id="freeStrokeRadio" text="Freestroke" toggleGroup="$toolGroup" selected="true" />
+                <RadioButton fx:id="lineRadio" text="Line" toggleGroup="$toolGroup" />
+                <RadioButton fx:id="rectRadio" text="Rectangle" toggleGroup="$toolGroup" />
+
+                <Separator />
+
+                <!-- Color de la línea o del contorno -->
+                <Label text="Line color" style="-fx-font-weight: bold;" />
+                <ColorPicker fx:id="lineColorPicker" />
+
+                <!-- Color de relleno (solo para los rectángulos) -->
+                <Label text="Fill color" style="-fx-font-weight: bold;" />
+                <ColorPicker fx:id="fillColorPicker" />
+
+                <!-- Ancho de la línea (siempre mayor que 0) -->
+                <Label text="Width" style="-fx-font-weight: bold;" />
+                <Slider fx:id="widthSlider" min="1.0" max="20.0" value="2.0"
+                        majorTickUnit="1.0" showTickMarks="true" />
+                <Label fx:id="widthLabel" text="2" />
 
                 <!-- Push the colors to the bottom -->
                 <Region VBox.vgrow="ALWAYS" />

@@ -4,6 +4,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
+import java.util.function.Consumer;
 
 // Predefined colors drawn as circles on their own Canvas
 public class ColorPalette {
@@ -15,6 +16,10 @@ public class ColorPalette {
     private final Canvas canvas;
     private final GraphicsContext gc;
     private Color selectedColor = COLORS[0];
+
+    // Se llama cuando el usuario pulsa un color de la paleta.
+    private Consumer<Color> onColorSelected = color -> {};
+
 
     public ColorPalette(Canvas canvas) {
         this.canvas = canvas;
@@ -36,6 +41,15 @@ public class ColorPalette {
         return canvas.getHeight() / 2;
     }
 
+    /**
+     * Permite avisar cuando el usuario elige un color de la paleta.
+     * @param onColorSelected función que recibe el color elegido
+     */
+    public void setOnColorSelected(Consumer<Color> onColorSelected) {
+        this.onColorSelected = onColorSelected;
+    }
+
+
     private void onMouseClicked(MouseEvent event) {
         for (int i = 0; i < COLORS.length; i++) {
             // Inside the circle if the distance to its center is smaller than the radius
@@ -46,6 +60,9 @@ public class ColorPalette {
             if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
                 selectedColor = COLORS[i];
                 draw();
+
+                // Avisamos al controlador del color elegido
+                onColorSelected.accept(COLORS[i]);
                 return;
             }
         }
