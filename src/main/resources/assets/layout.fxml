@@ -12,6 +12,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
 
 <HBox xmlns="http://javafx.com/javafx/22"
       xmlns:fx="http://javafx.com/fxml/1"
@@ -67,6 +68,7 @@
             <children>
                 <Label text="Objects" style="-fx-font-weight: bold;" />
                 <ListView fx:id="objectList" VBox.vgrow="ALWAYS" />
+                <Button fx:id="deleteButton" text="Delete" onAction="#onDeleteButton" />
             </children>
         </VBox>
 

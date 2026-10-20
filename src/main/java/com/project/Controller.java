@@ -20,6 +20,9 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.ToggleGroup;
 import javafx.geometry.Rectangle2D;
+import javafx.event.ActionEvent;
+import javafx.scene.control.Button;
+
 
 
 public class Controller implements Initializable {
@@ -42,6 +45,9 @@ public class Controller implements Initializable {
     @FXML private ColorPicker fillColorPicker;
     @FXML private Slider widthSlider;
     @FXML private Label widthLabel;
+
+    // Botón para eliminar el objeto seleccionado
+    @FXML private Button deleteButton;
 
     private GraphicsContext gc;
     private ColorPalette colorPalette;
@@ -89,6 +95,10 @@ public class Controller implements Initializable {
         canvas.setOnMousePressed(this::onMousePressed);
         canvas.setOnMouseDragged(this::onMouseDragged);
         canvas.setOnMouseReleased(this::onMouseReleased);
+
+        // El botón solo se activa si hay un objeto seleccionado.
+        // El enlace lo mantiene actualizado solo.
+        deleteButton.disableProperty().bind(objectList.getSelectionModel().selectedItemProperty().isNull());
 
         // Solo se puede seleccionar un objeto a la vez
         objectList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -266,6 +276,30 @@ public class Controller implements Initializable {
 
         redraw();
     }
+
+    /**
+     * Elimina el objeto seleccionado: desaparece del dibujo y de la lista.
+     */
+    @FXML
+    private void onDeleteButton(ActionEvent event) {
+        DrawableObject obj = selectedObject;
+
+        // Si no hay nada seleccionado, no hay nada que eliminar
+        if (obj == null) {
+            return;
+        }
+
+        // Quitar el objeto de la lista: como la lista es el modelo,
+        // también desaparece del dibujo al redibujar
+        objectList.getItems().remove(obj);
+
+        // Limpiar la selección: el requadro desaparece y el botón se desactiva
+        objectList.getSelectionModel().clearSelection();
+        selectedObject = null;
+
+        redraw();
+    }
+
 
     private void redraw() {
         gc.setFill(Color.WHITE);
