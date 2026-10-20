@@ -8,22 +8,22 @@ import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.RadioButton;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
-import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.ToggleGroup;
 import javafx.geometry.Rectangle2D;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
-
-
 
 public class Controller implements Initializable {
 
@@ -32,6 +32,7 @@ public class Controller implements Initializable {
 
     @FXML private Canvas canvas;
     @FXML private Canvas colorsCanvas;
+    @FXML private Canvas fillColorsCanvas;
 
     // Selector de herramienta
     @FXML private RadioButton freeStrokeRadio;
@@ -41,8 +42,6 @@ public class Controller implements Initializable {
     @FXML private ToggleGroup toolGroup;
 
     // Formulario de estilo
-    @FXML private ColorPicker lineColorPicker;
-    @FXML private ColorPicker fillColorPicker;
     @FXML private Slider widthSlider;
     @FXML private Label widthLabel;
 
@@ -51,6 +50,7 @@ public class Controller implements Initializable {
 
     private GraphicsContext gc;
     private ColorPalette colorPalette;
+    private ColorPalette fillPalette;
 
     // El objeto que se está dibujando ahora mismo.
     // Solo uno de los tres puede estar activo a la vez.
@@ -76,20 +76,13 @@ public class Controller implements Initializable {
         gc.setLineCap(StrokeLineCap.ROUND);
         gc.setLineJoin(StrokeLineJoin.ROUND);
 
-        // The palette handles its own drawing and clicks
+        // The two predefined color palettes: they handle their own drawing and clicks.
+        // They are the ONLY source of color in the application.
         colorPalette = new ColorPalette(colorsCanvas);
+        fillPalette = new ColorPalette(fillColorsCanvas, true);
 
         // The label shows the current width (linked to the slider)
         widthLabel.textProperty().bind(widthSlider.valueProperty().asString("%.0f"));
-
-        // The line color starts with the color selected in the palette
-        lineColorPicker.setValue(colorPalette.getSelectedColor());
-
-        // The fill color starts as a light gray
-        fillColorPicker.setValue(Color.color(0.85, 0.85, 0.85));
-
-        // Clicking a predefined color changes the line color of the ColorPicker
-        colorPalette.setOnColorSelected(c -> lineColorPicker.setValue(c));
 
         // Drawing canvas events
         canvas.setOnMousePressed(this::onMousePressed);
@@ -111,6 +104,15 @@ public class Controller implements Initializable {
                 clearToolSelection();
             }
             redraw();
+        });
+
+        // Escuchar las teclas
+        Platform.runLater(() -> {
+            canvas.getScene().addEventFilter(KeyEvent.ANY, event -> {
+                if (event.getCode() == KeyCode.DELETE) {
+                    onDeleteButton(null);
+                }
+            });
         });
 
         // Cuando el usuario elige una herramienta de dibujo, se desmarca el objeto
@@ -141,17 +143,20 @@ public class Controller implements Initializable {
         return null;
     }
 
-    /** Color de la línea o del contorno de los nuevos objetos. */
+    /**
+     * Color de la línea o del contorno de los nuevos objetos.
+     * Lo decide el usuario en la paleta de colores predefinidos.
+     */
     private Color getLineColor() {
-        return lineColorPicker.getValue();
+        return colorPalette.getSelectedColor();
     }
 
     /**
      * Color de relleno de los nuevos objetos.
-     * Puede ser null si se elige el botón "sin color" del ColorPicker.
+     * Es null si en la paleta de relleno está elegido el "sin color".
      */
     private Color getFillColor() {
-        return fillColorPicker.getValue();
+        return fillPalette.getSelectedColor();
     }
 
     /** Ancho de la línea de los nuevos objetos. */
