@@ -29,8 +29,8 @@ public class Controller implements Initializable {
     private static final double THICK_WIDTH = 8;
 
     // Drawing state
-    private final List<Stroke> strokes = new ArrayList<>();
-    private Stroke currentStroke = null;
+    private final List<DrawableObject> objects = new ArrayList<>();
+    private FreeStroke currentStroke = null;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -59,7 +59,7 @@ public class Controller implements Initializable {
         if (event.getButton() != MouseButton.PRIMARY) return;
 
         // Start a new stroke with the current style
-        currentStroke = new Stroke(colorPalette.getSelectedColor(), getSelectedWidth());
+        currentStroke = new FreeStroke(colorPalette.getSelectedColor(), getSelectedWidth());
         currentStroke.addPoint(event.getX(), event.getY());
         redraw();
     }
@@ -76,7 +76,7 @@ public class Controller implements Initializable {
 
         // The stroke is finished: keep it in memory
         currentStroke.addPoint(event.getX(), event.getY());
-        strokes.add(currentStroke);
+        objects.add(currentStroke);
         currentStroke = null;
         redraw();
     }
@@ -85,9 +85,9 @@ public class Controller implements Initializable {
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        // Saved strokes, in creation order
-        for (Stroke s : strokes) {
-            s.draw(gc);
+        // Objetos guardados en orden de creación
+        for (DrawableObject obj : objects) {
+            obj.draw(gc);
         }
 
         // Stroke being drawn right now (preview)
