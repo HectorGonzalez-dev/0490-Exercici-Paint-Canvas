@@ -28,6 +28,14 @@ public class LineObject extends DrawableObject {
     public double getX2() { return x2; }
     public double getY2() { return y2; }
 
+    /**
+     * Cambia el extremo final de la línea.
+     */
+    public void setEnd(double x, double y) {
+        this.x2 = x;
+        this.y2 = y;
+    }
+
     @Override
     public void draw(GraphicsContext gc) {
         applyLineStyle(gc);

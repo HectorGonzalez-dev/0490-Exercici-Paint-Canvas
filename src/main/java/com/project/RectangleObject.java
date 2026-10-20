@@ -27,6 +27,17 @@ public class RectangleObject extends DrawableObject {
     public double getW() { return width; }
     public double getH() { return height; }
 
+    /**
+     * Cambia la posición y el tamaño del rectángulo.
+     */
+    public void setBounds(double x, double y, double width, double height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+
     @Override
     public void draw(GraphicsContext gc) {
         // Primero el relleno (si lo hay)

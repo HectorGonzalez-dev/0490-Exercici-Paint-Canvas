@@ -17,7 +17,6 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
 
 public class Controller implements Initializable {
@@ -39,9 +38,18 @@ public class Controller implements Initializable {
     private GraphicsContext gc;
     private ColorPalette colorPalette;
 
-    // Drawing state
+    // Los objetos ya terminados, en orden de creación
     private final List<DrawableObject> objects = new ArrayList<>();
+
+    // El objeto que se está dibujando ahora mismo.
+    // Solo uno de los tres puede estar activo a la vez.
     private FreeStroke currentStroke = null;
+    private LineObject currentLine = null;
+    private RectangleObject currentRect = null;
+
+    // Punto inicial del arrastre
+    private double startX = 0;
+    private double startY = 0;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -111,28 +119,87 @@ public class Controller implements Initializable {
     // Drawing canvas
 
     private void onMousePressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) return;
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
 
-        // Start a new stroke with the current style
-        currentStroke = new FreeStroke(getLineColor(), getLineWidth());
-        currentStroke.addPoint(event.getX(), event.getY());
+        // Puede ser null si no hay ninguna herramienta activa
+        DrawableObject.Type tool = getSelectedTool();
+        if (tool == null) {
+            return;
+        }
+
+        double x = event.getX();
+        double y = event.getY();
+
+        switch (tool) {
+            case FREESTROKE:
+                // Empieza un trazo nuevo con el estilo actual
+                currentStroke = new FreeStroke(getLineColor(), getLineWidth());
+                currentStroke.addPoint(x, y);
+                break;
+
+            case LINE:
+                // La línea nace con los dos extremos en el mismo punto
+                // El extremo final se actualizará mientras se arrastra
+                startX = x;
+                startY = y;
+                currentLine = new LineObject(x, y, x, y, getLineColor(), getLineWidth());
+                break;
+
+            case RECTANGLE:
+                // El rectángulo nace con tamaño 0 y se ajustará al arrastrar
+                startX = x;
+                startY = y;
+                currentRect = new RectangleObject(x, y, 0, 0, getLineColor(), getLineWidth(), getFillColor());
+                break;
+        }
+
         redraw();
     }
 
     private void onMouseDragged(MouseEvent event) {
-        if (currentStroke == null) return;
+        double x = event.getX();
+        double y = event.getY();
 
-        currentStroke.addPoint(event.getX(), event.getY());
+        if (currentStroke != null) {
+            // Trazo libre: se añade el punto y se sigue
+            currentStroke.addPoint(x, y);
+        } else if (currentLine != null) {
+            // Línea: se actualiza el extremo final
+            currentLine.setEnd(x, y);
+        } else if (currentRect != null) {
+            // Rectángulo: se recalcula la caja con el punto inicial y el actual
+            updateRectangle(x, y);
+        }
+
         redraw();
     }
 
     private void onMouseReleased(MouseEvent event) {
-        if (currentStroke == null) return;
+        double x = event.getX();
+        double y = event.getY();
 
-        // The stroke is finished: keep it in memory
-        currentStroke.addPoint(event.getX(), event.getY());
-        objects.add(currentStroke);
-        currentStroke = null;
+        if (currentStroke != null) {
+            // El trazo está terminado: se guarda la posición final y pasa a la memoria
+            currentStroke.addPoint(x, y);
+            objects.add(currentStroke);
+            currentStroke = null;
+        } else if (currentLine != null) {
+            // La línea está terminada: se guarda la posición final y pasa a la memoria
+            currentLine.setEnd(x, y);
+            objects.add(currentLine);
+            currentLine = null;
+        } else if (currentRect != null) {
+            // El rectángulo está terminado: se ajusta al punto final y pasa a la memoria
+            updateRectangle(x, y);
+            // Solo se guarda si el rectángulo tiene algo de tamaño
+            if (currentRect.getW() > 0 || currentRect.getH() > 0) {
+                objects.add(currentRect);
+            }
+            currentRect = null;
+        }
+
         redraw();
     }
 
@@ -145,9 +212,25 @@ public class Controller implements Initializable {
             obj.draw(gc);
         }
 
-        // Stroke being drawn right now (preview)
+        // Se dibujan encima de los objetos existentes,
+        // pero todavía no forman parte de la lista
         if (currentStroke != null) {
             currentStroke.draw(gc);
         }
+        if (currentLine != null) {
+            currentLine.draw(gc);
+        }
+        if (currentRect != null) {
+            currentRect.draw(gc);
+        }
+    }
+
+    private void updateRectangle(double x, double y) {
+        double rectX = Math.min(startX, x);
+        double rectY = Math.min(startY, y);
+        double rectW = Math.abs(x - startX);
+        double rectH = Math.abs(y - startY);
+
+        currentRect.setBounds(rectX, rectY, rectW, rectH);
     }
 }
