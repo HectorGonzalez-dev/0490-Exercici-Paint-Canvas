@@ -18,6 +18,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.geometry.Rectangle2D;
 
 
 public class Controller implements Initializable {
@@ -233,6 +234,12 @@ public class Controller implements Initializable {
         if (currentRect != null) {
             currentRect.draw(gc);
         }
+
+        // Requadro del objeto seleccionado: se dibuja al final, con su propio estilo.
+        // Es un indicador de selección, no un objeto del dibujo.
+        if (selectedObject != null) {
+            drawSelectionBox(selectedObject);
+        }
     }
 
     private void updateRectangle(double x, double y) {
@@ -242,5 +249,38 @@ public class Controller implements Initializable {
         double rectH = Math.abs(y - startY);
 
         currentRect.setBounds(rectX, rectY, rectW, rectH);
+    }
+
+    /**
+     * Rectángulo que envuelve al objeto seleccionado, con un margen.
+     */
+    private Rectangle2D getSelectionBounds(DrawableObject obj) {
+        Rectangle2D bounds = obj.getBounds();
+        double margin = obj.getLineWidth() / 2 + 4;
+
+        return new Rectangle2D(
+                bounds.getMinX() - margin,
+                bounds.getMinY() - margin,
+                bounds.getWidth() + margin * 2,
+                bounds.getHeight() + margin * 2);
+    }
+
+    /**
+     * Dibuja el requadro discontinuo que marca el objeto seleccionado.
+     */
+    private void drawSelectionBox(DrawableObject obj) {
+        Rectangle2D box = getSelectionBounds(obj);
+
+        // Estilo propio del requadro
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1.5);
+
+        // Trazo discontinuo: 5 píxeles de raya, 5 de hueco
+        gc.setLineDashes(5, 5);
+
+        gc.strokeRect(box.getMinX(), box.getMinY(), box.getWidth(), box.getHeight());
+
+        // Restablecemos el discontinuo: si no, los próximos trazos saldrían también discontinuos
+        gc.setLineDashes(null);
     }
 }
