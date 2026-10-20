@@ -8,6 +8,7 @@
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ColorPicker?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -60,11 +61,12 @@
             </children>
         </VBox>
 
-        <!-- Right: objects list (to do) -->
+        <!-- Right: objects list -->
         <VBox prefWidth="160.0">
             <padding><Insets top="10.0" right="10.0" bottom="10.0" left="10.0" /></padding>
             <children>
                 <Label text="Objects" style="-fx-font-weight: bold;" />
+                <ListView fx:id="objectList" VBox.vgrow="ALWAYS" />
             </children>
         </VBox>
 

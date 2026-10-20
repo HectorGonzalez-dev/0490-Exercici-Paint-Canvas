@@ -1,8 +1,6 @@
 package com.project;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ResourceBundle;
 
 import javafx.fxml.FXML;
@@ -18,8 +16,14 @@ import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
+
 
 public class Controller implements Initializable {
+
+    // La lista de objetos (la del ListView)
+    @FXML private ListView<DrawableObject> objectList;
 
     @FXML private Canvas canvas;
     @FXML private Canvas colorsCanvas;
@@ -38,11 +42,9 @@ public class Controller implements Initializable {
     private GraphicsContext gc;
     private ColorPalette colorPalette;
 
-    // Los objetos ya terminados, en orden de creación
-    private final List<DrawableObject> objects = new ArrayList<>();
-
     // El objeto que se está dibujando ahora mismo.
     // Solo uno de los tres puede estar activo a la vez.
+    private DrawableObject selectedObject = null;
     private FreeStroke currentStroke = null;
     private LineObject currentLine = null;
     private RectangleObject currentRect = null;
@@ -72,11 +74,19 @@ public class Controller implements Initializable {
         // Clicking a predefined color changes the line color of the ColorPicker
         colorPalette.setOnColorSelected(c -> lineColorPicker.setValue(c));
 
-
         // Drawing canvas events
         canvas.setOnMousePressed(this::onMousePressed);
         canvas.setOnMouseDragged(this::onMouseDragged);
         canvas.setOnMouseReleased(this::onMouseReleased);
+
+        // Solo se puede seleccionar un objeto a la vez
+        objectList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        // Al seleccionar una entrada guardamos el objeto y redibujamos el lienzo.
+        objectList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            selectedObject = newValue;
+            redraw();
+        });
 
         redraw();
     }
@@ -183,19 +193,19 @@ public class Controller implements Initializable {
         if (currentStroke != null) {
             // El trazo está terminado: se guarda la posición final y pasa a la memoria
             currentStroke.addPoint(x, y);
-            objects.add(currentStroke);
+            objectList.getItems().add(currentStroke);
             currentStroke = null;
         } else if (currentLine != null) {
             // La línea está terminada: se guarda la posición final y pasa a la memoria
             currentLine.setEnd(x, y);
-            objects.add(currentLine);
+            objectList.getItems().add(currentLine);
             currentLine = null;
         } else if (currentRect != null) {
             // El rectángulo está terminado: se ajusta al punto final y pasa a la memoria
             updateRectangle(x, y);
             // Solo se guarda si el rectángulo tiene algo de tamaño
             if (currentRect.getW() > 0 || currentRect.getH() > 0) {
-                objects.add(currentRect);
+                objectList.getItems().add(currentRect);
             }
             currentRect = null;
         }
@@ -208,7 +218,7 @@ public class Controller implements Initializable {
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
         // Objetos guardados en orden de creación
-        for (DrawableObject obj : objects) {
+        for (DrawableObject obj : objectList.getItems()) {
             obj.draw(gc);
         }
 
