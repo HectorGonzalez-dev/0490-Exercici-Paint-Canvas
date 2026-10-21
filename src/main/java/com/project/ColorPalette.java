@@ -1,76 +1,139 @@
 package com.project;
 
+import java.util.function.Consumer;
+
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
 public class ColorPalette {
 
-    // Rejilla de colores: COLORS[fila][columna]
     private static final Color[][] COLORS = {
-        // Fila 0: tonos oscuros
         {
-            Color.web("#7F1D1D"), Color.web("#7C2D12"), Color.web("#713F12"), Color.web("#14532D"),
-            Color.web("#164E63"), Color.web("#1E3A8A"), Color.web("#4C1D95"), Color.web("#701A75")
+            Color.web("#000000"),
+            Color.web("#7A1D0E"),
+            Color.web("#844E19"),
+            Color.web("#94902C"),
+            Color.web("#588525"),
+            Color.web("#3B8624"),
+            Color.web("#39824F"),
+            Color.web("#3B868B"),
+            Color.web("#1F4D8D"),
+            Color.web("#05178A"),
+            Color.web("#491D92"),
+            Color.web("#86268F"),
+            Color.web("#81214D")
         },
-        // Fila 1: tonos medios
         {
-            Color.web("#DC2626"), Color.web("#EA580C"), Color.web("#CA8A04"), Color.web("#16A34A"),
-            Color.web("#0891B2"), Color.web("#2563EB"), Color.web("#7C3AED"), Color.web("#C026D3")
+            Color.web("#595959"),
+            Color.web("#973D2F"),
+            Color.web("#976732"),
+            Color.web("#9C993E"),
+            Color.web("#6D9639"),
+            Color.web("#489433"),
+            Color.web("#499464"),
+            Color.web("#4B9699"),
+            Color.web("#36649A"),
+            Color.web("#26369D"),
+            Color.web("#61379C"),
+            Color.web("#943E99"),
+            Color.web("#90355E")
         },
-        // Fila 2: tonos claros
         {
-            Color.web("#F87171"), Color.web("#FB923C"), Color.web("#FACC15"), Color.web("#4ADE80"),
-            Color.web("#22D3EE"), Color.web("#60A5FA"), Color.web("#A78BFA"), Color.web("#E879F9")
+            Color.web("#A6A6A6"),
+            Color.web("#E5563A"),
+            Color.web("#ECA146"),
+            Color.web("#F9F75F"),
+            Color.web("#ABF256"),
+            Color.web("#70EA4F"),
+            Color.web("#73EEA3"),
+            Color.web("#77F2F6"),
+            Color.web("#509DF1"),
+            Color.web("#304CF1"),
+            Color.web("#9753EF"),
+            Color.web("#E665F0"),
+            Color.web("#E35398")
         },
-        // Fila 3: tonos muy claros
         {
-            Color.web("#FECACA"), Color.web("#FED7AA"), Color.web("#FEF08A"), Color.web("#BBF7D0"),
-            Color.web("#A5F3FC"), Color.web("#BFDBFE"), Color.web("#DDD6FE"), Color.web("#F5D0FE")
+            Color.web("#FFFFFF"),
+            Color.web("#EB9088"),
+            Color.web("#F5D68F"),
+            Color.web("#FAF995"),
+            Color.web("#DAF791"),
+            Color.web("#95F08B"),
+            Color.web("#99F4D5"),
+            Color.web("#99F4F7"),
+            Color.web("#94D2F5"),
+            Color.web("#858BF2"),
+            Color.web("#CA8FF2"),
+            Color.web("#EA95F3"),
+            Color.web("#E995D3")
         }
     };
 
-    // Separación entre el centro de dos colores contiguos
-    private static final double SPACING = 28;
+    // Separación horizontal entre el centro de dos lápices contiguos
+    private static final double SPACING_X = 19;
 
-    // Radio de cada círculo
-    private static final double RADIUS = 10;
+    // Separación vertical entre el centro de dos tonos de la misma familia
+    private static final double SPACING_Y = 26;
 
-    // Cuánto sube el color seleccionado respecto al resto de su fila
-    private static final double ELEVATION = 8;
+    // Anchura del cuerpo del lápiz
+    private static final double PENCIL_W = 15;
 
-    // Y del centro de la primera fila (deja sitio para que el color elevado no se corte)
-    private static final double TOP = 26;
+    // Altura de la punta (triángulo) del lápiz
+    private static final double TIP_H = 7;
+
+    // Altura del cuerpo del lápiz
+    private static final double BODY_H = 11;
+
+    // Cuánto sube el lápiz con el color seleccionado respecto al resto de su fila
+    private static final double ELEVATION = 6;
+
+    // Y de la punta del primer lápiz (deja sitio para que el lápiz elevado no se corte)
+    private static final double TOP = 12;
 
     private final Canvas canvas;
     private final GraphicsContext gc;
 
-    // Si es true, la paleta añade el swatch "sin color" (a la derecha de la rejilla)
-    private final boolean noneOption;
+    // Se llama cuando el usuario elige un color de la rejilla.
+    // Sirve para sincronizar el color con otro control.
+    private final Consumer<Color> onColorSelected;
 
-    // Color marcado en la paleta (null = "sin color")
+    // Color marcado en la paleta (null = ningún color marcado)
     private Color selectedColor;
 
-    public ColorPalette(Canvas canvas) {
-        this(canvas, false);
-    }
-
-    public ColorPalette(Canvas canvas, boolean noneOption) {
+    public ColorPalette(Canvas canvas, Consumer<Color> onColorSelected) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
-        this.noneOption = noneOption;
+        this.onColorSelected = onColorSelected;
 
-        // Por defecto: un color de la rejilla. En la paleta de relleno, "sin color".
-        this.selectedColor = noneOption ? null : COLORS[1][0];
+        // Por defecto: el rojo en su tono medio.
+        this.selectedColor = COLORS[2][1];
 
         canvas.setOnMouseClicked(this::onMouseClicked);
         draw();
     }
 
-    /** Color elegido en la paleta (null si está en "sin color"). */
+    /** Color marcado en la paleta. */
     public Color getSelectedColor() {
         return selectedColor;
+    }
+
+    /**
+     * Marca el color indicado como seleccionado y redibuja la paleta.
+     * Si el color no está en la rejilla, no queda ningún color marcado.
+     */
+    public void setSelectedColor(Color color) {
+        if (color == null ? selectedColor == null : color.equals(selectedColor)) {
+            return;
+        }
+
+        this.selectedColor = color;
+        draw();
     }
 
     private int getRows() {
@@ -81,14 +144,14 @@ public class ColorPalette {
         return COLORS[0].length;
     }
 
-    /** Centro X del color de la columna col */
+    /** Centro X del lápiz de la columna col */
     private double getCenterX(int col) {
-        return SPACING / 2 + col * SPACING;
+        return SPACING_X / 2 + col * SPACING_X;
     }
 
-    /** Centro Y del color de la fila row, teniendo en cuenta si está elevado */
-    private double getCenterY(int row, boolean elevated) {
-        return TOP + row * SPACING - (elevated ? ELEVATION : 0);
+    /** Y de la punta del lápiz de la fila row */
+    private double getTopY(int row) {
+        return TOP + row * SPACING_Y;
     }
 
     /** True si ese color es el seleccionado */
@@ -96,39 +159,36 @@ public class ColorPalette {
         return selectedColor == null ? color == null : selectedColor.equals(color);
     }
 
-    /** True si el swatch "sin color" está seleccionado */
-    private boolean isNoneSelected() {
-        return selectedColor == null;
+    /**
+     * True si el punto (x, y) cae dentro del lápiz de esa fila y columna.
+     * El lápiz seleccionado está desplazado hacia arriba, y su zona también.
+     */
+    private boolean isInside(int row, int col, double x, double y) {
+        double cx = getCenterX(col);
+        double half = PENCIL_W / 2;
+        double top = getTopY(row) - (isSelected(COLORS[row][col]) ? ELEVATION : 0);
+
+        if (x < cx - half || x > cx + half) {
+            return false;
+        }
+        return y >= top && y <= top + TIP_H + BODY_H;
     }
 
     private void onMouseClicked(MouseEvent event) {
         double x = event.getX();
         double y = event.getY();
 
-        // El swatch "sin color" (solo en la paleta de relleno) está a la derecha de la rejilla
-        if (noneOption) {
-            double dx = x - getCenterX(getColumns());
-            double dy = y - getCenterY(0, isNoneSelected());
-
-            if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
-                selectedColor = null;
-                draw();
-                return;
-            }
-        }
-
-        // Buscamos el círculo pulsado
+        // Buscamos el lápiz pulsado
         for (int row = 0; row < getRows(); row++) {
             for (int col = 0; col < getColumns(); col++) {
-                Color color = COLORS[row][col];
-
-                double dx = x - getCenterX(col);
-                double dy = y - getCenterY(row, isSelected(color));
-
-                // Dentro del círculo si la distancia al centro es menor que el radio
-                if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
-                    selectedColor = color;
+                if (isInside(row, col, x, y)) {
+                    selectedColor = COLORS[row][col];
                     draw();
+
+                    // Avisamos al resto de la aplicación del color elegido
+                    if (onColorSelected != null) {
+                        onColorSelected.accept(selectedColor);
+                    }
                     return;
                 }
             }
@@ -140,57 +200,80 @@ public class ColorPalette {
 
         for (int row = 0; row < getRows(); row++) {
             for (int col = 0; col < getColumns(); col++) {
-                Color color = COLORS[row][col];
-                boolean selected = isSelected(color);
-
-                double cx = getCenterX(col);
-                // El color seleccionado se dibuja más ARRIBA que el resto de su fila
-                double cy = getCenterY(row, selected);
-
-                gc.setFill(color);
-                gc.fillOval(cx - RADIUS, cy - RADIUS, RADIUS * 2, RADIUS * 2);
-
-                // Marca extra: un anillo fino.
-                if (selected) {
-                    gc.setStroke(Color.BLACK);
-                    gc.setLineWidth(1.5);
-                    gc.strokeOval(cx - RADIUS - 1, cy - RADIUS - 1, (RADIUS + 1) * 2, (RADIUS + 1) * 2);
-                }
+                drawPencil(row, col, COLORS[row][col], isSelected(COLORS[row][col]));
             }
-        }
-
-        if (noneOption) {
-            drawNoneSwatch();
         }
     }
 
     /**
-     * Swatch "sin color": un círculo blanco con una diagonal roja.
-     * Es el símbolo universal de "sin relleno".
+     * Dibuja un lápiz: la punta (triángulo) y el cuerpo (rectángulo),
+     * con un degradado horizontal que simula el cilindro del lápiz.
      */
-    private void drawNoneSwatch() {
-        double cx = getCenterX(getColumns());
-        double cy = getCenterY(0, isNoneSelected());
+    private void drawPencil(int row, int col, Color color, boolean selected) {
+        double cx = getCenterX(col);
+        double half = PENCIL_W / 2;
 
-        // Círculo blanco
-        gc.setFill(Color.WHITE);
-        gc.fillOval(cx - RADIUS, cy - RADIUS, RADIUS * 2, RADIUS * 2);
+        // El lápiz con el color seleccionado se dibuja más ARRIBA que el resto de su fila
+        double top = getTopY(row) - (selected ? ELEVATION : 0);
 
-        // Contorno gris
-        gc.setStroke(Color.GRAY);
+        // Cuerpo del lápiz: degradado horizontal
+        gc.setFill(new LinearGradient(
+                cx - half, top, cx + half, top,
+                false,
+                CycleMethod.NO_CYCLE,
+                new Stop(0.00, darken(color, 0.65)),
+                new Stop(0.35, lighten(color, 1.15)),
+                new Stop(0.70, color),
+                new Stop(1.00, darken(color, 0.70))));
+        gc.fillRect(cx - half, top + TIP_H, PENCIL_W, BODY_H);
+
+        // Punta del lápiz: triángulo del color seleccionado
+        gc.setFill(color);
+        gc.fillPolygon(
+                new double[] { cx, cx - half, cx + half },
+                new double[] { top, top + TIP_H, top + TIP_H },
+                3);
+
+        // Contorno del lápiz: separa los lápices contiguos
+        gc.setStroke(darken(color, 0.55));
         gc.setLineWidth(1);
-        gc.strokeOval(cx - RADIUS, cy - RADIUS, RADIUS * 2, RADIUS * 2);
+        gc.strokeRect(cx - half, top + TIP_H, PENCIL_W, BODY_H);
+        gc.beginPath();
+        gc.moveTo(cx - half, top + TIP_H);
+        gc.lineTo(cx, top);
+        gc.lineTo(cx + half, top + TIP_H);
+        gc.stroke();
 
-        // Diagonal roja
-        gc.setStroke(Color.web("#DC2626"));
-        gc.setLineWidth(2);
-        gc.strokeLine(cx - RADIUS * 0.7, cy + RADIUS * 0.7, cx + RADIUS * 0.7, cy - RADIUS * 0.7);
-
-        // Anillo negro del color seleccionado
-        if (isNoneSelected()) {
+        // Marca del color seleccionado: un contorno negro alrededor del lápiz entero
+        if (selected) {
             gc.setStroke(Color.BLACK);
             gc.setLineWidth(1.5);
-            gc.strokeOval(cx - RADIUS - 1, cy - RADIUS - 1, (RADIUS + 1) * 2, (RADIUS + 1) * 2);
+            gc.beginPath();
+            gc.moveTo(cx - half, top + TIP_H);
+            gc.lineTo(cx, top);
+            gc.lineTo(cx + half, top + TIP_H);
+            gc.lineTo(cx + half, top + TIP_H + BODY_H);
+            gc.lineTo(cx - half, top + TIP_H + BODY_H);
+            gc.closePath();
+            gc.stroke();
         }
+    }
+
+    /** Color oscurecido: el factor va de 0 (negro) a 1 (sin cambios). */
+    private static Color darken(Color color, double factor) {
+        return Color.color(
+                color.getRed() * factor,
+                color.getGreen() * factor,
+                color.getBlue() * factor,
+                color.getOpacity());
+    }
+
+    /** Color aclarado: el factor va de 1 (sin cambios) a 2 (blanco). */
+    private static Color lighten(Color color, double factor) {
+        return Color.color(
+                Math.min(1.0, color.getRed() * factor),
+                Math.min(1.0, color.getGreen() * factor),
+                Math.min(1.0, color.getBlue() * factor),
+                color.getOpacity());
     }
 }

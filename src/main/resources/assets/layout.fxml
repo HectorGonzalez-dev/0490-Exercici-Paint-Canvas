@@ -8,6 +8,8 @@
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ColorPicker?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -37,6 +39,18 @@
 
                 <Separator />
 
+                <!-- Colores de la línea y del relleno (selector de color de JavaFX) -->
+                <Label text="Color" style="-fx-font-weight: bold;" />
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <Label text="Line" minWidth="40.0" />
+                    <ColorPicker fx:id="lineColorPicker" />
+                </HBox>
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <Label text="Fill" minWidth="40.0" />
+                    <ColorPicker fx:id="fillColorPicker" />
+                    <CheckBox fx:id="noFillCheck" text="No fill" />
+                </HBox>
+
                 <!-- Ancho de la línea (siempre mayor que 0) -->
                 <Label text="Width" style="-fx-font-weight: bold;" />
                 <Slider fx:id="widthSlider" min="1.0" max="20.0" value="2.0"
@@ -47,13 +61,9 @@
                 <Region VBox.vgrow="ALWAYS" />
                 <Separator />
 
-                <!-- Predefined colors: line / outline color -->
-                <Label text="Line color" style="-fx-font-weight: bold;" />
-                <Canvas fx:id="colorsCanvas" width="224.0" height="124.0" />
-
-                <!-- Predefined colors: fill color (only for rectangles) -->
-                <Label text="Fill color" style="-fx-font-weight: bold;" />
-                <Canvas fx:id="fillColorsCanvas" width="252.0" height="124.0" />
+                <!-- Colores predefinidos: al pulsar uno, se aplica al color de línea -->
+                <Label text="Predefined colors" style="-fx-font-weight: bold;" />
+                <Canvas fx:id="colorsCanvas" width="250.0" height="112.0" />
             </children>
         </VBox>
 

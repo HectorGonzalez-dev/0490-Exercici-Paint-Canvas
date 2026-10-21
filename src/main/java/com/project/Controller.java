@@ -20,6 +20,8 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.CheckBox;
 import javafx.geometry.Rectangle2D;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -27,12 +29,14 @@ import javafx.scene.control.Button;
 
 public class Controller implements Initializable {
 
+    // Color de relleno inicial de los nuevos objetos.
+    private static final Color DEFAULT_FILL_COLOR = Color.web("#94D2F5");
+
     // La lista de objetos (la del ListView)
     @FXML private ListView<DrawableObject> objectList;
 
     @FXML private Canvas canvas;
     @FXML private Canvas colorsCanvas;
-    @FXML private Canvas fillColorsCanvas;
 
     // Selector de herramienta
     @FXML private RadioButton freeStrokeRadio;
@@ -42,6 +46,9 @@ public class Controller implements Initializable {
     @FXML private ToggleGroup toolGroup;
 
     // Formulario de estilo
+    @FXML private ColorPicker lineColorPicker;
+    @FXML private ColorPicker fillColorPicker;
+    @FXML private CheckBox noFillCheck;
     @FXML private Slider widthSlider;
     @FXML private Label widthLabel;
 
@@ -50,7 +57,6 @@ public class Controller implements Initializable {
 
     private GraphicsContext gc;
     private ColorPalette colorPalette;
-    private ColorPalette fillPalette;
 
     // El objeto que se está dibujando ahora mismo.
     // Solo uno de los tres puede estar activo a la vez.
@@ -76,10 +82,22 @@ public class Controller implements Initializable {
         gc.setLineCap(StrokeLineCap.ROUND);
         gc.setLineJoin(StrokeLineJoin.ROUND);
 
-        // The two predefined color palettes: they handle their own drawing and clicks.
-        // They are the ONLY source of color in the application.
-        colorPalette = new ColorPalette(colorsCanvas);
-        fillPalette = new ColorPalette(fillColorsCanvas, true);
+        // The predefined color palette: it handles its own drawing and clicks.
+        // When a preset is clicked it updates the line ColorPicker.
+        colorPalette = new ColorPalette(colorsCanvas, this::onPresetColorSelected);
+
+        // The ColorPickers are the source of truth for the line and fill colors.
+        // The line color starts with the color marked in the predefined palette.
+        lineColorPicker.setValue(colorPalette.getSelectedColor());
+        fillColorPicker.setValue(DEFAULT_FILL_COLOR);
+
+        // When the line color changes, the palette marks the matching preset (if any)
+        lineColorPicker.valueProperty().addListener((obs, oldValue, newValue) ->
+                colorPalette.setSelectedColor(newValue));
+
+        // "No fill" disables the fill picker: the rectangles are drawn without filling
+        noFillCheck.selectedProperty().addListener((obs, oldValue, newValue) ->
+                fillColorPicker.setDisable(newValue));
 
         // The label shows the current width (linked to the slider)
         widthLabel.textProperty().bind(widthSlider.valueProperty().asString("%.0f"));
@@ -145,18 +163,29 @@ public class Controller implements Initializable {
 
     /**
      * Color de la línea o del contorno de los nuevos objetos.
-     * Lo decide el usuario en la paleta de colores predefinidos.
+     * Lo elige el usuario en el selector de color de JavaFX.
      */
     private Color getLineColor() {
-        return colorPalette.getSelectedColor();
+        return lineColorPicker.getValue();
     }
 
     /**
      * Color de relleno de los nuevos objetos.
-     * Es null si en la paleta de relleno está elegido el "sin color".
+     * Es null si está marcado el "No fill": el rectángulo se dibuja solo con el contorno.
      */
     private Color getFillColor() {
-        return fillPalette.getSelectedColor();
+        if (noFillCheck.isSelected()) {
+            return null;
+        }
+        return fillColorPicker.getValue();
+    }
+
+    /**
+     * Se llama cuando el usuario elige un color de la paleta de colores predefinidos.
+     * El color elegido se aplica al color de línea del formulario.
+     */
+    private void onPresetColorSelected(Color color) {
+        lineColorPicker.setValue(color);
     }
 
     /** Ancho de la línea de los nuevos objetos. */
